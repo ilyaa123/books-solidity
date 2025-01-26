@@ -1,0 +1,16 @@
+{
+  "name": "hardhat-project",
+  "scripts": {
+    "compile": "hardhat compile",
+    "generate:typechain": "hardhat typechain",
+    "run": "hardhat run",
+    "node": "hardhat node",
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "verify": "hardhat verify"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.18"
+  }
+}
