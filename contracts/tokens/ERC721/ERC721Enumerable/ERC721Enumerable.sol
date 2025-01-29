@@ -25,6 +25,43 @@ contract ERC721Enumerable is IERC721Enumerable, ERC721 {
         _allTokens.push(tokenId);
     }
 
+    function _removeTokenFromOwnerEnumeration(uint256 tokenId) private {
+        uint256 lastTokenIndex = _allTokens.length - 1;
+        uint256 tokenIndex = _allTokensIndex[tokenId];
+
+        if (tokenIndex != lastTokenIndex) {
+            uint256 lastTokenId = _allTokens[lastTokenIndex];
+
+            _allTokens[tokenIndex] = lastTokenId;
+            _allTokensIndex[lastTokenId] = tokenIndex;
+        }
+
+        _allTokens.pop();
+        delete _allTokensIndex[tokenId];
+
+    }
+
+    function _removeTokenFromAllTokensEnumeration(uint256 tokenId) private {
+        uint256 lastTokenIndex = _allTokens.length - 1;
+        uint256 tokenIndex = _allTokensIndex[tokenId];
+
+        uint256 lastTokenId = _allTokens[lastTokenIndex];
+        _allTokens[tokenIndex] = lastTokenId;
+        _allTokensIndex[lastTokenId] = tokenIndex;
+
+        _allTokens.pop();
+        delete _allTokensIndex[tokenId];
+    }
+
+    function _burn(uint256 tokenId) internal override virtual {
+        super._burn(tokenId);
+
+        _removeTokenFromOwnerEnumeration(tokenId);
+
+        _removeTokenFromAllTokensEnumeration(tokenId);
+
+    }
+
     function _mint(address to, uint256 tokenId) internal override virtual {
         super._mint(to, tokenId);
 

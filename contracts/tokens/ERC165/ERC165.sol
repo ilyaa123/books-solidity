@@ -8,8 +8,8 @@ contract ERC165 is IERC165 {
 
     mapping(bytes4 => bool) internal supportedInterfaces;
 
-    constructor()  {
-        supportedInterfaces[0x01ffc9a7] = true;
+    constructor() {
+        supportedInterfaces[type(IERC165).interfaceId] = true;
     }
 
     function supportsInterface(bytes4 interfaceID) external view returns (bool) {

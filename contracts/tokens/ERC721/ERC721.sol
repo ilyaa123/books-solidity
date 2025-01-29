@@ -54,7 +54,20 @@ contract ERC721 is IERC721 {
         emit Transfer(_from, _to, _tokenId);
     }
 
+    function _burn(uint256 _tokenId) internal virtual _requireMinted(_tokenId) _requireApprovedOrOwner(msg.sender, _tokenId) {
+        address owner = ownerOf(_tokenId);
+
+        delete _tokenApprovals[_tokenId];
+
+        _balances[owner]--;
+
+        delete _owners[_tokenId];
+
+        emit Transfer(owner, address(0), _tokenId);
+    }
+
     function _mint(address to, uint256 tokenId) internal virtual {
+        require(_owners[tokenId] == address(0), "Token already minted");
         require(to != address(0), "Mint to the zero address");
         
         _owners[tokenId] = to;

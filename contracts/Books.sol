@@ -26,6 +26,10 @@ contract BooksCollection is ERC165, ERC721Metadata, ERC721Enumerable {
         supportedInterfaces[type(IERC721Enumerable).interfaceId] = true;
     }
 
+    function _burn(uint256 tokenId) internal override(ERC721, ERC721Enumerable) {
+        ERC721Enumerable._burn(tokenId);
+    }
+
     function _mint(address to, uint256 tokenId) internal override(ERC721, ERC721Enumerable) {
         ERC721Enumerable._mint(to, tokenId);
     }
