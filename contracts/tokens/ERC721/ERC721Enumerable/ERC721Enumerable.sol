@@ -7,45 +7,22 @@ import "./IERC721Enumerable.sol";
 import "../ERC721.sol";
 
 contract ERC721Enumerable is IERC721Enumerable, ERC721 {
-    mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
-    mapping(uint256 => uint256) private _ownedTokensIndex;
-    
+
     uint256[] private _allTokens;
+
+    mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
+    mapping(address => uint256) private _ownedTokensCount;
+
     mapping(uint256 => uint256) private _allTokensIndex;
+    
+    function _burn(uint256 tokenId) internal override virtual {
+        super._burn(tokenId);
 
-    function _addTokenToOwnerEnumeration(address to, uint256 tokenId) private {
-        uint256 length = balanceOf(to);
-        
-        _ownedTokens[to][length] = tokenId;
-        _ownedTokensIndex[tokenId] = length;
-    }
-
-    function _addTokenToAllTokensEnumeration(uint256 tokenId) private {
-        _allTokensIndex[tokenId] = _allTokens.length;
-        _allTokens.push(tokenId);
-    }
-
-    function _removeTokenFromOwnerEnumeration(uint256 tokenId) private {
-        uint256 lastTokenIndex = _allTokens.length - 1;
-        uint256 tokenIndex = _allTokensIndex[tokenId];
-
-        if (tokenIndex != lastTokenIndex) {
-            uint256 lastTokenId = _allTokens[lastTokenIndex];
-
-            _allTokens[tokenIndex] = lastTokenId;
-            _allTokensIndex[lastTokenId] = tokenIndex;
-        }
-
-        _allTokens.pop();
-        delete _allTokensIndex[tokenId];
-
-    }
-
-    function _removeTokenFromAllTokensEnumeration(uint256 tokenId) private {
         uint256 lastTokenIndex = _allTokens.length - 1;
         uint256 tokenIndex = _allTokensIndex[tokenId];
 
         uint256 lastTokenId = _allTokens[lastTokenIndex];
+
         _allTokens[tokenIndex] = lastTokenId;
         _allTokensIndex[lastTokenId] = tokenIndex;
 
@@ -53,39 +30,38 @@ contract ERC721Enumerable is IERC721Enumerable, ERC721 {
         delete _allTokensIndex[tokenId];
     }
 
-    function _burn(uint256 tokenId) internal override virtual {
-        super._burn(tokenId);
-
-        _removeTokenFromOwnerEnumeration(tokenId);
-
-        _removeTokenFromAllTokensEnumeration(tokenId);
-
-    }
-
     function _mint(address to, uint256 tokenId) internal override virtual {
         super._mint(to, tokenId);
 
-        _addTokenToOwnerEnumeration(to, tokenId);
-        _addTokenToAllTokensEnumeration(tokenId);
+        _allTokensIndex[tokenId] = _allTokens.length;
+        _allTokens.push(tokenId);
+        
+        uint256 length = _ownedTokensCount[to];
+        _ownedTokens[to][length] = tokenId;
+        _ownedTokensCount[to]++;
     }
 
     function _safeMint(address to, uint256 tokenId, bytes calldata data) internal override virtual {
         super._safeMint(to, tokenId, data);
 
-        _addTokenToOwnerEnumeration(to, tokenId);
-        _addTokenToAllTokensEnumeration(tokenId);
+        _allTokensIndex[tokenId] = _allTokens.length;
+        _allTokens.push(tokenId);
+        
+        uint256 length = _ownedTokensCount[to];
+        _ownedTokens[to][length] = tokenId;
+        _ownedTokensCount[to]++;
     }
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _allTokens.length;
     }
 
-    function tokenByIndex(uint256 index) external view returns (uint256) {
+    function tokenByIndex(uint256 index) external view override returns (uint256) {
         require(index < totalSupply(), "Index out of bounds");
         return _allTokens[index];
     }
 
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256) {
+    function tokenOfOwnerByIndex(address owner, uint256 index) external view override returns (uint256) {
         require(index < balanceOf(owner), "Index out of bounds");
         return _ownedTokens[owner][index];
     }
