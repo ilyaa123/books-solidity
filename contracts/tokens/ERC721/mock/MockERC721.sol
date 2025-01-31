@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-import "./ERC721.sol";
+import "../ERC721.sol";
 
 contract MockERC721 is ERC721 {
 

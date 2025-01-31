@@ -54,7 +54,7 @@ contract ERC721 is IERC721 {
         emit Transfer(_from, _to, _tokenId);
     }
 
-    function _burn(uint256 _tokenId) internal virtual _requireMinted(_tokenId) _requireApprovedOrOwner(msg.sender, _tokenId) {
+    function _burn(uint256 _tokenId) internal virtual _requireApprovedOrOwner(msg.sender, _tokenId) {
         address owner = ownerOf(_tokenId);
 
         delete _tokenApprovals[_tokenId];

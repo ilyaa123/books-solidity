@@ -1,4 +1,4 @@
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 
@@ -18,11 +18,7 @@ describe("ERC721 Token Contract", () => {
       return erc721.safeMint(to, tokenId, data);
     };
 
-    const burn = (tokenId: number) => {
-      return erc721.burn(tokenId);
-    };
-
-    return { erc721, owner, otherAccount, otherAccount2, mint, safeMint, burn };
+    return { erc721, owner, otherAccount, otherAccount2, mint, safeMint };
   };
 
   describe("Minting and Burning Tokens", () => {
@@ -76,6 +72,73 @@ describe("ERC721 Token Contract", () => {
       await expect(
         safeMint(hre.ethers.ZeroAddress, tokenId, "0x")
       ).to.be.revertedWith("Mint to the zero address");
+    });
+
+    it("Without receiver", async () => {
+      const { safeMint } = await loadFixture(loadERC721Fixture);
+
+      const MockNonERC721Receiver = await hre.ethers.getContractFactory(
+        "MockNonERC721Receiver"
+      );
+
+      const mockNonERC721Receiver = await MockNonERC721Receiver.deploy();
+
+      const tokenId = 2;
+
+      await expect(
+        safeMint(await mockNonERC721Receiver.getAddress(), tokenId, "0x")
+      ).to.revertedWith("Non erc721 receiver!");
+    });
+
+    it("With receiver", async () => {
+      const { erc721, safeMint } = await loadFixture(loadERC721Fixture);
+
+      const MockERC721Receiver = await hre.ethers.getContractFactory(
+        "MockERC721Receiver"
+      );
+
+      const mockERC721Receiver = await MockERC721Receiver.deploy();
+
+      const mockERC721ReceiverAddress = await mockERC721Receiver.getAddress();
+
+      const tokenId = 2;
+
+      await expect(safeMint(mockERC721ReceiverAddress, tokenId, "0x"))
+        .to.emit(erc721, "Transfer")
+        .withArgs(hre.ethers.ZeroAddress, mockERC721ReceiverAddress, tokenId);
+
+      expect(await erc721.ownerOf(tokenId)).to.equal(mockERC721ReceiverAddress);
+      expect(await erc721.balanceOf(mockERC721ReceiverAddress)).to.equal(1);
+    });
+
+    it("Should burn reverted with not owner", async () => {
+      const { erc721, owner, otherAccount, mint } = await loadFixture(
+        loadERC721Fixture
+      );
+
+      const tokenId = 2;
+
+      await mint(owner.address, tokenId);
+
+      await expect(
+        erc721.connect(otherAccount).burn(tokenId)
+      ).to.be.revertedWith("Not an owner or approved!");
+    });
+
+    it("Should success burned", async () => {
+      const { erc721, owner, mint } = await loadFixture(loadERC721Fixture);
+
+      const tokenId = 2;
+
+      await mint(owner.address, tokenId);
+
+      await erc721.connect(owner).burn(tokenId);
+
+      await expect(erc721.ownerOf(tokenId)).to.be.revertedWith(
+        "Token does not exist!"
+      );
+
+      expect(await erc721.balanceOf(owner)).to.be.equal(0);
     });
   });
 
@@ -167,6 +230,67 @@ describe("ERC721 Token Contract", () => {
       expect(await erc721.ownerOf(tokenId)).to.equal(otherAccount2);
       expect(await erc721.balanceOf(otherAccount2)).to.equal(1);
     });
+
+    it("Should revert safeTransferFrom when recipient contract does not implement ERC721Receiver", async () => {
+      const { erc721, otherAccount, mint } = await loadFixture(
+        loadERC721Fixture
+      );
+
+      const MockNonERC721Receiver = await hre.ethers.getContractFactory(
+        "MockNonERC721Receiver"
+      );
+
+      const mockNonERC721Receiver = await MockNonERC721Receiver.deploy();
+
+      const tokenId = 2;
+
+      await mint(otherAccount.address, tokenId);
+
+      await expect(
+        erc721
+          .connect(otherAccount)
+          .safeTransferFrom(
+            otherAccount,
+            await mockNonERC721Receiver.getAddress(),
+            tokenId,
+            "0x"
+          )
+      ).to.be.revertedWith("Non erc721 receiver!");
+    });
+
+    it("Should successfully transfer token to a contract implementing ERC721Receiver", async () => {
+      const { erc721, otherAccount, mint } = await loadFixture(
+        loadERC721Fixture
+      );
+
+      const MockERC721Receiver = await hre.ethers.getContractFactory(
+        "MockERC721Receiver"
+      );
+
+      const mockERC721Receiver = await MockERC721Receiver.deploy();
+
+      const mockERC721ReceiverAddres = await mockERC721Receiver.getAddress();
+
+      const tokenId = 2;
+
+      await mint(otherAccount.address, tokenId);
+
+      await expect(
+        erc721
+          .connect(otherAccount)
+          .safeTransferFrom(
+            otherAccount,
+            mockERC721ReceiverAddres,
+            tokenId,
+            "0x"
+          )
+      )
+        .to.emit(erc721, "Transfer")
+        .withArgs(otherAccount, mockERC721ReceiverAddres, tokenId);
+
+      expect(await erc721.ownerOf(tokenId)).to.equal(mockERC721ReceiverAddres);
+      expect(await erc721.balanceOf(mockERC721ReceiverAddres)).to.equal(1);
+    });
   });
 
   describe("Token Approval Functionality", () => {
@@ -202,6 +326,29 @@ describe("ERC721 Token Contract", () => {
       await erc721.connect(owner).approve(otherAccount, tokenId);
 
       expect(await erc721.getApproved(tokenId)).to.equal(otherAccount);
+    });
+
+    it("Should allow the owner to approve another account and burning", async () => {
+      const { erc721, owner, otherAccount, mint } = await loadFixture(
+        loadERC721Fixture
+      );
+
+      const tokenId = 2;
+      await mint(owner.address, tokenId);
+
+      await erc721.connect(owner).approve(otherAccount, tokenId);
+
+      await erc721.connect(otherAccount).burn(tokenId);
+
+      await expect(erc721.ownerOf(tokenId)).to.be.revertedWith(
+        "Token does not exist!"
+      );
+
+      await expect(erc721.getApproved(tokenId)).to.be.revertedWith(
+        "Token does not exist!"
+      );
+
+      expect(await erc721.balanceOf(owner)).to.be.equal(0);
     });
 
     describe("Approved transfers", () => {
@@ -290,6 +437,40 @@ describe("ERC721 Token Contract", () => {
 
       await erc721.connect(owner).setApprovalForAll(otherAccount, false);
       expect(await erc721.isApprovedForAll(owner, otherAccount)).to.be.false;
+    });
+
+    it("Should approving an approved for all operator ", async () => {
+      const { erc721, owner, otherAccount, otherAccount2 } = await loadFixture(
+        loadERC721Fixture
+      );
+
+      const tokenId = 2;
+
+      await erc721.mint(owner, tokenId);
+
+      await erc721.connect(owner).setApprovalForAll(otherAccount, true);
+
+      await erc721.connect(otherAccount).approve(otherAccount2, tokenId);
+
+      expect(await erc721.getApproved(tokenId)).to.be.equal(otherAccount2);
+    });
+
+    it("Should prevent approving oneself as an operator and burning", async () => {
+      const { erc721, owner, otherAccount, mint } = await loadFixture(
+        loadERC721Fixture
+      );
+
+      const tokenId = 2;
+      await mint(owner.address, tokenId);
+
+      await erc721.connect(owner).setApprovalForAll(otherAccount, true);
+
+      await erc721.connect(otherAccount).burn(tokenId);
+
+      await expect(erc721.ownerOf(tokenId)).to.be.revertedWith(
+        "Token does not exist!"
+      );
+      expect(await erc721.balanceOf(owner)).to.be.equal(0);
     });
 
     describe("Approved All transfers", () => {
