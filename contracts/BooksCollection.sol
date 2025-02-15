@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.28;
 
+import "hardhat/console.sol";
+
 import "./tokens/ERC165/ERC165.sol";
 
 import "./tokens/ERC721/ERC721Metadata/ERC721Metadata.sol";
@@ -10,10 +12,10 @@ import "./tokens/ERC721/ERC721Enumerable/ERC721Enumerable.sol";
 contract BooksCollection is ERC165, ERC721Metadata, ERC721Enumerable {
     
     struct Book {
+        uint16 publicationYear;
         string title;
         string description;
         string author;
-        uint16 publicationYear;
         string isbn;
         string[] genres;
     }
@@ -45,28 +47,13 @@ contract BooksCollection is ERC165, ERC721Metadata, ERC721Enumerable {
         books[tokenId] = book;
     }
 
+    function burnBook(uint256 tokenId) external _requireMinted(tokenId) {
+        _burn(tokenId);
+
+        delete books[tokenId];
+    }
+
     function getBook(uint256 tokenId) external view _requireMinted(tokenId) returns (Book memory) {
         return books[tokenId];
     }
-
-    function addGenre(uint256 tokenId, string memory genre) external _requireMinted(tokenId) {
-        books[tokenId].genres.push(genre);
-    }
-
-    function removeGenre(uint256 tokenId, string memory genre) external _requireMinted(tokenId) {
-        string[] storage genres = books[tokenId].genres;
-        uint length = genres.length;
-
-        for (uint i = 0; i < length; i++) {
-            if (keccak256(abi.encodePacked(genres[i])) == keccak256(abi.encodePacked(genre))) {
-                genres[i] = genres[length - 1];
-                genres.pop();
-                return;
-            }
-        }
-
-        revert("Genre not found");
-    }
-
-
 }

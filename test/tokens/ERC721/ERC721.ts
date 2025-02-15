@@ -196,7 +196,12 @@ describe("ERC721 Token Contract", () => {
       const tokenId = 2;
 
       await expect(
-        erc721.safeTransferFrom(otherAccount, otherAccount2, tokenId, "0x")
+        erc721["safeTransferFrom(address,address,uint256,bytes)"](
+          otherAccount,
+          otherAccount2,
+          tokenId,
+          "0x"
+        )
       ).to.be.revertedWith("Token does not exist!");
     });
 
@@ -210,7 +215,12 @@ describe("ERC721 Token Contract", () => {
       await mint(otherAccount.address, tokenId);
 
       await expect(
-        erc721.safeTransferFrom(otherAccount, otherAccount2, tokenId, "0x")
+        erc721["safeTransferFrom(address,address,uint256,bytes)"](
+          otherAccount,
+          otherAccount2,
+          tokenId,
+          "0x"
+        )
       ).to.be.revertedWith("Not an owner or approved!");
     });
 
@@ -225,7 +235,12 @@ describe("ERC721 Token Contract", () => {
 
       await erc721
         .connect(otherAccount)
-        .safeTransferFrom(otherAccount, otherAccount2, tokenId, "0x");
+        ["safeTransferFrom(address,address,uint256,bytes)"](
+          otherAccount,
+          otherAccount2,
+          tokenId,
+          "0x"
+        );
 
       expect(await erc721.ownerOf(tokenId)).to.equal(otherAccount2);
       expect(await erc721.balanceOf(otherAccount2)).to.equal(1);
@@ -249,7 +264,7 @@ describe("ERC721 Token Contract", () => {
       await expect(
         erc721
           .connect(otherAccount)
-          .safeTransferFrom(
+          ["safeTransferFrom(address,address,uint256,bytes)"](
             otherAccount,
             await mockNonERC721Receiver.getAddress(),
             tokenId,
@@ -278,7 +293,7 @@ describe("ERC721 Token Contract", () => {
       await expect(
         erc721
           .connect(otherAccount)
-          .safeTransferFrom(
+          ["safeTransferFrom(address,address,uint256,bytes)"](
             otherAccount,
             mockERC721ReceiverAddres,
             tokenId,

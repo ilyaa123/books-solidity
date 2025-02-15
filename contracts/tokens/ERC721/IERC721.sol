@@ -16,6 +16,8 @@ interface IERC721 {
 
     function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata data) external payable;
 
+    function safeTransferFrom(address _from, address _to, uint256 _tokenId) external payable;
+
     function transferFrom(address _from, address _to, uint256 _tokenId) external payable;
 
     function approve(address _approved, uint256 _tokenId) external payable;

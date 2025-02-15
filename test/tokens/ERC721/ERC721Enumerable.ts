@@ -129,6 +129,23 @@ describe("ERC721Enumerable Token Contract", () => {
     ).to.be.equal(tokens2[index2]);
   });
 
+  it("Should revert when token index of owner is out of bounds", async () => {
+    const { otherAccount, erc721Enum, mint } = await loadFixture(
+      loadERC721EnumerableFixture
+    );
+
+    const tokens = [1, 2];
+
+    await mint({
+      to: otherAccount.address,
+      tokenIds: tokens,
+    });
+
+    await expect(
+      erc721Enum.tokenOfOwnerByIndex(otherAccount.address, 2)
+    ).to.be.revertedWith("Index out of bounds");
+  });
+
   it("Should burn a token and update supply", async () => {
     const { otherAccount, erc721Enum, mint } = await loadFixture(
       loadERC721EnumerableFixture
@@ -154,6 +171,28 @@ describe("ERC721Enumerable Token Contract", () => {
     expect(
       await erc721Enum.tokenOfOwnerByIndex(otherAccount, tokens.length - 2)
     ).to.equal(tokens[tokens.length - 2]);
+  });
+
+  it("Should correctly remove a token from the middle of the array in total supply", async () => {
+    const { otherAccount, erc721Enum, mint } = await loadFixture(
+      loadERC721EnumerableFixture
+    );
+
+    const tokens = [1, 2, 3, 4];
+
+    await mint({
+      to: otherAccount.address,
+      tokenIds: tokens,
+    });
+
+    expect(await erc721Enum.totalSupply()).to.equal(tokens.length);
+
+    await erc721Enum.connect(otherAccount).burn(tokens[1]);
+
+    expect(await erc721Enum.totalSupply()).to.equal(tokens.length - 1);
+
+    const lastToken = tokens[tokens.length - 1]; // Это токен 4
+    expect(await erc721Enum.tokenByIndex(1)).to.equal(lastToken);
   });
 
   it("Should allow safe mint without contract owner", async () => {
