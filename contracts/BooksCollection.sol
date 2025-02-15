@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import "hardhat/console.sol";
-
 import "./tokens/ERC165/ERC165.sol";
 
 import "./tokens/ERC721/ERC721Metadata/ERC721Metadata.sol";
