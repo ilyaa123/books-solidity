@@ -6,6 +6,7 @@ import "./tokens/ERC165/ERC165.sol";
 
 import "./tokens/ERC721/ERC721Metadata/ERC721Metadata.sol";
 import "./tokens/ERC721/ERC721Enumerable/ERC721Enumerable.sol";
+import "./tokens/ERC20/ERC20.sol";
 
 contract BooksCollection is ERC165, ERC721Metadata, ERC721Enumerable {
     
