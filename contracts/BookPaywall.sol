@@ -9,13 +9,16 @@ contract BookPaywall {
     IERC721 public bookNFT;
     IERC20 public token;
 
+    bool private initialized;
     mapping(uint256 => uint256) public contentPrice;
     mapping(address => mapping(uint256 => uint256)) public accessExpiration;
 
     event AccessPurchased(address indexed buyer, uint256 tokenId, uint256 expiration);
     event ContentPriceUpdated(uint256 tokenId, uint256 newPrice);
 
-    constructor(address _bookNFT, address _token) {
+    function initialize(address _bookNFT, address _token) external {
+        require(!initialized, "Already initialized");
+        initialized = true;
         bookNFT = IERC721(_bookNFT);
         token = IERC20(_token);
     }
